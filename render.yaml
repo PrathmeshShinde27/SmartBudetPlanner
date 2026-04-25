@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: smart-budget-planner-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm start --workspace server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGINS
+        sync: false
+      - key: TOKEN_EXPIRES_IN
+        value: 7d
