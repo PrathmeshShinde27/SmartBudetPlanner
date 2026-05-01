@@ -1,4 +1,4 @@
-import { AlertTriangle, Download, PiggyBank, Scale, Wallet, WalletCards } from 'lucide-react';
+import { AlertTriangle, ClipboardList, Download, Scale, Wallet, WalletCards } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -12,8 +12,10 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
+import { useState } from 'react';
 import StatCard from '../components/StatCard.jsx';
 import ExpenseForm from '../components/ExpenseForm.jsx';
+import Toast from '../components/Toast.jsx';
 import { api } from '../lib/api.js';
 import { currency, prettyDate } from '../lib/format.js';
 import { useBudget } from '../state/BudgetContext.jsx';
@@ -22,10 +24,18 @@ const colors = ['#41644a', '#ff7a59', '#f4b942', '#6aa5b8', '#8f6fbd', '#7aa95c'
 
 export default function Dashboard() {
   const { dashboard, categories, refresh, month, loading } = useBudget();
+  const [toast, setToast] = useState(null);
 
   async function addExpense(input) {
-    await api.post('/expense', input);
-    await refresh();
+    try {
+      await api.post('/expense', input);
+      await refresh();
+      setToast({ message: 'Expense added', type: 'success' });
+      window.setTimeout(() => setToast(null), 3000);
+    } catch (error) {
+      setToast({ message: error.response?.data?.message || 'Could not add expense', type: 'error' });
+      window.setTimeout(() => setToast(null), 3000);
+    }
   }
 
   async function exportExcel() {
@@ -48,7 +58,8 @@ export default function Dashboard() {
   }));
 
   return (
-    <div className="space-y-5">
+    <div className="max-w-full space-y-5 overflow-x-hidden">
+      <Toast toast={toast} onClose={() => setToast(null)} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold">Dashboard</h2>
@@ -73,15 +84,15 @@ export default function Dashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Budget" value={currency.format(dashboard.totals.totalBudget)} icon={Wallet} />
+        <StatCard label="Total Planned" value={currency.format(dashboard.totals.totalPlanned)} icon={ClipboardList} />
         <StatCard label="Total Spent" value={currency.format(dashboard.totals.totalSpent)} icon={WalletCards} tone={dashboard.totals.remaining < 0 ? 'hot' : 'default'} />
         <StatCard label="Remaining" value={currency.format(dashboard.totals.remaining)} icon={Scale} tone={dashboard.totals.remaining < 0 ? 'hot' : 'good'} />
-        <StatCard label="Savings" value={currency.format(dashboard.totals.savings)} icon={PiggyBank} tone="warn" />
       </div>
 
       <ExpenseForm categories={categories} onSubmit={addExpense} />
 
-      <div className="grid gap-4 xl:grid-cols-5">
-        <section className="panel p-4 xl:col-span-2">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-5">
+        <section className="panel min-w-0 p-4 xl:col-span-2">
           <h3 className="font-semibold">Spending by category</h3>
           <div className="mt-4 h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -96,7 +107,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="panel p-4 xl:col-span-3">
+        <section className="panel min-w-0 p-4 xl:col-span-3">
           <h3 className="font-semibold">Planned vs actual</h3>
           <div className="mt-4 h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -114,10 +125,10 @@ export default function Dashboard() {
         </section>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-5">
-        <section className="panel p-4 xl:col-span-3">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-5">
+        <section className="panel min-w-0 p-4 xl:col-span-3">
           <h3 className="font-semibold">50/30/20 summary</h3>
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 max-w-full overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="text-xs uppercase text-zinc-500">
                 <tr>
@@ -143,7 +154,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="panel p-4 xl:col-span-2">
+        <section className="panel min-w-0 p-4 xl:col-span-2">
           <h3 className="font-semibold">Recent expenses</h3>
           <div className="mt-3 space-y-3">
             {dashboard.recentExpenses.length ? dashboard.recentExpenses.map((expense) => (

@@ -7,10 +7,10 @@ export default {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
       },
       colors: {
-        ink: '#17201b',
-        moss: '#41644a',
-        mint: '#d7f1df',
-        coral: '#ff7a59',
+        ink: '#102033',
+        moss: '#0284c7',
+        mint: '#dff3ff',
+        coral: '#f97316',
         honey: '#f4b942',
         skyglass: '#dceefa'
       }

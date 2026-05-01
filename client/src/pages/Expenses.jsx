@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import ExpenseForm from '../components/ExpenseForm.jsx';
+import Toast from '../components/Toast.jsx';
 import { api } from '../lib/api.js';
 import { currency, prettyDate } from '../lib/format.js';
 import { useBudget } from '../state/BudgetContext.jsx';
@@ -8,25 +9,47 @@ import { useBudget } from '../state/BudgetContext.jsx';
 export default function Expenses() {
   const { expenses, categories, refresh } = useBudget();
   const [editing, setEditing] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  function showToast(message, type = 'success') {
+    setToast({ message, type });
+    window.setTimeout(() => setToast(null), 3000);
+  }
 
   async function addExpense(input) {
-    await api.post('/expense', input);
-    await refresh();
+    try {
+      await api.post('/expense', input);
+      await refresh();
+      showToast('Expense added');
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Could not add expense', 'error');
+    }
   }
 
   async function updateExpense(input) {
-    await api.put(`/expense/${editing.id}`, input);
-    setEditing(null);
-    await refresh();
+    try {
+      await api.put(`/expense/${editing.id}`, input);
+      setEditing(null);
+      await refresh();
+      showToast('Expense updated');
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Could not update expense', 'error');
+    }
   }
 
   async function deleteExpense(id) {
-    await api.delete(`/expense/${id}`);
-    await refresh();
+    try {
+      await api.delete(`/expense/${id}`);
+      await refresh();
+      showToast('Expense deleted');
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Could not delete expense', 'error');
+    }
   }
 
   return (
     <div className="space-y-5">
+      <Toast toast={toast} onClose={() => setToast(null)} />
       <div>
         <h2 className="text-2xl font-semibold">Expenses</h2>
         <p className="text-sm text-zinc-500">Add, edit, and delete daily spending without reloading the page.</p>

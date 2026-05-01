@@ -10,7 +10,9 @@ export const config = {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
-  tokenExpiresIn: process.env.TOKEN_EXPIRES_IN || '7d'
+  tokenExpiresIn: process.env.TOKEN_EXPIRES_IN || '7d',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  emailFrom: process.env.EMAIL_FROM || 'Smart Budget Planner <onboarding@resend.dev>'
 };
 
 if (!config.databaseUrl) {

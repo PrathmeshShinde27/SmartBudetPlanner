@@ -13,8 +13,15 @@ import {
   copyBudgetSchema,
   expenseSchema,
   expenseUpdateSchema,
+  forgotPasswordSchema,
+  incomeSchema,
   loginSchema,
-  registerSchema
+  passwordUpdateSchema,
+  profileUpdateSchema,
+  registerSchema,
+  resendOtpSchema,
+  resetPasswordSchema,
+  verifyEmailSchema
 } from '../validation.js';
 import { assertMonth, currentMonth } from '../utils/month.js';
 
@@ -24,6 +31,7 @@ const categories = [];
 const budgets = [];
 const expenses = [];
 const incomes = [];
+const otps = [];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workbookPath = path.join(__dirname, '..', '..', '..', 'SmartBudgetPlanner.xlsx');
@@ -37,7 +45,39 @@ function signToken(user) {
 }
 
 function publicUser(user) {
-  return { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt };
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    phoneCountryCode: user.phoneCountryCode,
+    phoneNumber: user.phoneNumber,
+    city: user.city,
+    emailVerified: user.emailVerified,
+    role: user.role || 'user',
+    createdAt: user.createdAt
+  };
+}
+
+function createDevOtp(userId, email, purpose) {
+  const otp = '123456';
+  otps.push({
+    id: randomUUID(),
+    userId,
+    purpose,
+    otp,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+    consumed: false
+  });
+  console.log(`[DEV OTP] ${purpose} for ${email}: ${otp}`);
+}
+
+function verifyDevOtp(userId, purpose, otp) {
+  const record = [...otps]
+    .reverse()
+    .find((item) => item.userId === userId && item.purpose === purpose && !item.consumed && item.expiresAt > Date.now());
+  if (!record || record.otp !== otp) return false;
+  record.consumed = true;
+  return true;
 }
 
 function findUser(id) {
@@ -75,7 +115,10 @@ function dashboardFor(userId, rawMonth) {
   });
 
   const monthIncome = incomes.filter((item) => item.userId === userId && item.month === month);
-  const totalBudget = categoryRows.reduce((sum, row) => sum + row.planned, 0);
+  const totalPlanned = categoryRows.reduce((sum, row) => sum + row.planned, 0);
+  const plannedIncome = monthIncome.reduce((sum, item) => sum + item.plannedAmount, 0);
+  const actualIncome = monthIncome.reduce((sum, item) => sum + item.actualAmount, 0);
+  const totalBudget = plannedIncome || actualIncome || totalPlanned;
   const totalSpent = categoryRows.reduce((sum, row) => sum + row.actual, 0);
   const remaining = totalBudget - totalSpent;
 
@@ -88,7 +131,7 @@ function dashboardFor(userId, rawMonth) {
       targetPercent: groupName === 'Needs' ? 50 : groupName === 'Wants' ? 30 : 20,
       planned,
       actual,
-      plannedPercent: totalBudget > 0 ? (planned / totalBudget) * 100 : 0,
+      plannedPercent: totalPlanned > 0 ? (planned / totalPlanned) * 100 : 0,
       actualPercent: totalSpent > 0 ? (actual / totalSpent) * 100 : 0,
       difference: planned - actual
     };
@@ -114,9 +157,10 @@ function dashboardFor(userId, rawMonth) {
   return {
     month,
     totals: {
-      plannedIncome: monthIncome.reduce((sum, item) => sum + item.plannedAmount, 0),
-      actualIncome: monthIncome.reduce((sum, item) => sum + item.actualAmount, 0),
+      plannedIncome,
+      actualIncome,
       totalBudget,
+      totalPlanned,
       totalSpent,
       remaining,
       savings: Math.max(remaining, 0),
@@ -176,6 +220,11 @@ export async function seedDevMemory() {
     email: 'demo@budget.local',
     passwordHash,
     name: 'Demo User',
+    phoneCountryCode: '+91',
+    phoneNumber: '',
+    city: 'Pune',
+    emailVerified: true,
+    role: 'admin',
     createdAt: new Date().toISOString()
   };
   users.push(user);
@@ -222,10 +271,16 @@ router.post('/auth/register', async (req, res, next) => {
       email: input.email,
       passwordHash: await bcrypt.hash(input.password, 12),
       name: input.name || null,
+      phoneCountryCode: input.phoneCountryCode || null,
+      phoneNumber: input.phoneNumber || null,
+      city: input.city || null,
+      emailVerified: false,
+      role: 'user',
       createdAt: new Date().toISOString()
     };
     users.push(user);
-    res.status(201).json({ user: publicUser(user), token: signToken(user) });
+    createDevOtp(user.id, user.email, 'verify_email');
+    res.status(201).json({ message: 'Verification OTP sent', email: user.email });
   } catch (error) {
     next(error);
   }
@@ -238,6 +293,14 @@ router.post('/auth/login', async (req, res, next) => {
     if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+    if (!user.emailVerified) {
+      createDevOtp(user.id, user.email, 'verify_email');
+      return res.status(403).json({
+        message: 'Email verification required',
+        code: 'EMAIL_VERIFICATION_REQUIRED',
+        email: user.email
+      });
+    }
     res.json({ user: publicUser(user), token: signToken(user) });
   } catch (error) {
     next(error);
@@ -248,9 +311,120 @@ router.get('/auth/me', requireAuth, (req, res) => {
   res.json({ user: publicUser(findUser(req.user.id)) });
 });
 
+router.post('/auth/verify-email', (req, res, next) => {
+  try {
+    const input = verifyEmailSchema.parse(req.body);
+    const user = users.find((item) => item.email === input.email);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!verifyDevOtp(user.id, 'verify_email', input.otp)) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+    user.emailVerified = true;
+    res.json({ user: publicUser(user), token: signToken(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/auth/resend-verification-otp', (req, res, next) => {
+  try {
+    const input = resendOtpSchema.parse(req.body);
+    const user = users.find((item) => item.email === input.email);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.emailVerified) return res.json({ message: 'Email already verified' });
+    createDevOtp(user.id, user.email, 'verify_email');
+    res.json({ message: 'Verification OTP sent' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/auth/forgot-password', (req, res, next) => {
+  try {
+    const input = forgotPasswordSchema.parse(req.body);
+    const user = users.find((item) => item.email === input.email);
+    if (user) createDevOtp(user.id, user.email, 'reset_password');
+    res.json({ message: 'If the email exists, a reset OTP has been sent' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/auth/reset-password', async (req, res, next) => {
+  try {
+    const input = resetPasswordSchema.parse(req.body);
+    const user = users.find((item) => item.email === input.email);
+    if (!user || !verifyDevOtp(user.id, 'reset_password', input.otp)) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+    user.passwordHash = await bcrypt.hash(input.newPassword, 12);
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/auth/profile', requireAuth, (req, res, next) => {
+  try {
+    const input = profileUpdateSchema.parse(req.body);
+    const user = findUser(req.user.id);
+    user.name = input.name ?? user.name;
+    user.city = input.city ?? user.city;
+    res.json({ user: publicUser(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/auth/password', requireAuth, async (req, res, next) => {
+  try {
+    const input = passwordUpdateSchema.parse(req.body);
+    const user = findUser(req.user.id);
+    if (!user || !(await bcrypt.compare(input.currentPassword, user.passwordHash))) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    user.passwordHash = await bcrypt.hash(input.newPassword, 12);
+    res.json({ message: 'Password updated' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/dashboard', requireAuth, (req, res, next) => {
   try {
     res.json(dashboardFor(req.user.id, req.query.month));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/income', requireAuth, (req, res, next) => {
+  try {
+    const month = assertMonth(req.query.month || currentMonth());
+    const rows = incomes.filter((item) => item.userId === req.user.id && item.month === month);
+    res.json({
+      month,
+      income: rows[0] || null,
+      totalPlanned: rows.reduce((sum, row) => sum + row.plannedAmount, 0),
+      totalActual: rows.reduce((sum, row) => sum + row.actualAmount, 0)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/income', requireAuth, (req, res, next) => {
+  try {
+    const input = incomeSchema.parse(req.body);
+    let income = incomes.find((item) => item.userId === req.user.id && item.month === input.month);
+    if (!income) {
+      income = { id: randomUUID(), userId: req.user.id, month: input.month };
+      incomes.push(income);
+    }
+    income.source = input.source;
+    income.plannedAmount = input.plannedAmount;
+    income.actualAmount = input.actualAmount ?? input.plannedAmount;
+    res.json({ income });
   } catch (error) {
     next(error);
   }
@@ -325,9 +499,12 @@ router.put('/category/:id/budget', requireAuth, (req, res, next) => {
 });
 
 router.delete('/category/:id', requireAuth, (req, res) => {
-  const category = categories.find((item) => item.id === req.params.id && item.userId === req.user.id);
-  if (!category) return res.status(404).json({ message: 'Category not found' });
-  category.isArchived = true;
+  const index = categories.findIndex((item) => item.id === req.params.id && item.userId === req.user.id);
+  if (index === -1) return res.status(404).json({ message: 'Category not found' });
+  if (expenses.some((expense) => expense.categoryId === req.params.id && expense.userId === req.user.id)) {
+    return res.status(400).json({ message: 'Delete expenses in this category before deleting it' });
+  }
+  categories.splice(index, 1);
   res.status(204).send();
 });
 

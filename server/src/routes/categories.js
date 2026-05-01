@@ -95,16 +95,16 @@ categoriesRouter.put('/:id', requireAuth, async (req, res, next) => {
 
 categoriesRouter.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const result = await query(
-      `UPDATE categories
-       SET is_archived = TRUE, updated_at = NOW()
-       WHERE id = $1 AND user_id = $2
-       RETURNING id`,
-      [req.params.id, req.user.id]
-    );
+    const result = await query('DELETE FROM categories WHERE id = $1 AND user_id = $2 RETURNING id', [
+      req.params.id,
+      req.user.id
+    ]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Category not found' });
     res.status(204).send();
   } catch (error) {
+    if (error.code === '23503') {
+      return res.status(400).json({ message: 'Delete expenses in this category before deleting it' });
+    }
     next(error);
   }
 });

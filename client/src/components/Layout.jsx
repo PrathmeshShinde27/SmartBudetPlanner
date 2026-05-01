@@ -1,10 +1,10 @@
-import { BarChart3, CreditCard, LayoutDashboard, LogOut, Moon, Settings, Tags, Sun } from 'lucide-react';
+import { BarChart3, CreditCard, LayoutDashboard, LogOut, Moon, Settings, ShieldCheck, Tags, Sun } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useBudget } from '../state/BudgetContext.jsx';
 
-const links = [
+const baseLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/expenses', label: 'Expenses', icon: CreditCard },
   { to: '/categories', label: 'Categories', icon: Tags },
@@ -15,6 +15,9 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const { month, setMonth } = useBudget();
   const [dark, setDark] = useState(() => localStorage.getItem('sbp_dark') === 'true');
+  const links = user?.role === 'admin'
+    ? [...baseLinks.slice(0, 3), { to: '/admin', label: 'Admin', icon: ShieldCheck }, baseLinks[3]]
+    : baseLinks;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -22,8 +25,8 @@ export default function Layout() {
   }, [dark]);
 
   return (
-    <div className="min-h-screen bg-[#f7f8f3] text-ink dark:bg-[#101513] dark:text-zinc-100">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-black/10 bg-white px-4 py-5 dark:border-white/10 dark:bg-zinc-950 lg:block">
+    <div className="min-h-screen bg-[#f4faff] text-ink dark:bg-[#07111f] dark:text-zinc-100">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-sky-100 bg-white px-4 py-5 dark:border-sky-900/50 dark:bg-slate-950 lg:block">
         <div className="flex items-center gap-3 px-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-moss text-white dark:bg-mint dark:text-ink">
             <BarChart3 size={22} />
@@ -51,10 +54,16 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+        <div className="absolute bottom-5 left-4 right-4 rounded-lg border border-sky-100 bg-sky-50 p-3 text-xs text-slate-600 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-100">
+          <p className="font-semibold text-ink dark:text-white">Built by Prathmesh Shinde</p>
+          <a className="mt-1 block text-sky-700 hover:text-sky-900 dark:text-sky-300" href="https://prathmeshshinde.com" target="_blank" rel="noreferrer">
+            prathmeshshinde.com
+          </a>
+        </div>
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-10 border-b border-black/10 bg-[#f7f8f3]/90 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-[#101513]/90 sm:px-6">
+        <header className="sticky top-0 z-10 border-b border-sky-100 bg-[#f4faff]/90 px-4 py-3 backdrop-blur dark:border-sky-900/50 dark:bg-[#07111f]/90 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">Welcome back</p>

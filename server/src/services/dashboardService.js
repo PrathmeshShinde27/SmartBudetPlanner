@@ -44,7 +44,7 @@ export async function getDashboard(userId, requestedMonth) {
          e.amount,
          e.payment_method AS "paymentMethod",
          e.description,
-         e.expense_date AS "date",
+         e.expense_date::text AS "date",
          c.name AS "categoryName",
          c.group_name AS "groupName"
        FROM expenses e
@@ -77,7 +77,10 @@ export async function getDashboard(userId, requestedMonth) {
     };
   });
 
-  const totalBudget = categories.reduce((sum, row) => sum + row.planned, 0);
+  const totalPlanned = categories.reduce((sum, row) => sum + row.planned, 0);
+  const plannedIncome = money(income.planned_income);
+  const actualIncome = money(income.actual_income);
+  const totalBudget = plannedIncome || actualIncome || totalPlanned;
   const totalSpent = categories.reduce((sum, row) => sum + row.actual, 0);
   const remaining = totalBudget - totalSpent;
 
@@ -91,30 +94,28 @@ export async function getDashboard(userId, requestedMonth) {
       targetPercent,
       planned,
       actual,
-      plannedPercent: totalBudget > 0 ? (planned / totalBudget) * 100 : 0,
+      plannedPercent: totalPlanned > 0 ? (planned / totalPlanned) * 100 : 0,
       actualPercent: totalSpent > 0 ? (actual / totalSpent) * 100 : 0,
       difference: planned - actual
     };
   });
 
   const alerts = categories
-    .filter((row) => row.planned > 0 && row.actual / row.planned >= 0.85)
+    .filter((row) => row.planned > 0 && row.actual > row.planned)
     .map((row) => ({
       categoryId: row.id,
       categoryName: row.name,
-      severity: row.actual > row.planned ? 'over' : 'near',
-      message:
-        row.actual > row.planned
-          ? `${row.name} is over budget`
-          : `${row.name} is near the budget limit`
+      severity: 'over',
+      message: `${row.name} is over budget`
     }));
 
   return {
     month,
     totals: {
-      plannedIncome: money(income.planned_income),
-      actualIncome: money(income.actual_income),
+      plannedIncome,
+      actualIncome,
       totalBudget,
+      totalPlanned,
       totalSpent,
       remaining,
       savings: Math.max(remaining, 0),

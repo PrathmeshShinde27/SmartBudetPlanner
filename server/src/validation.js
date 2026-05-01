@@ -3,12 +3,44 @@ import { z } from 'zod';
 export const registerSchema = z.object({
   name: z.string().trim().max(120).optional(),
   email: z.string().trim().email().toLowerCase(),
+  phoneCountryCode: z.string().trim().max(8).optional(),
+  phoneNumber: z.string().trim().max(20).optional(),
+  city: z.string().trim().max(120).optional(),
   password: z.string().min(8).max(128)
 });
 
 export const loginSchema = z.object({
   email: z.string().trim().email().toLowerCase(),
   password: z.string().min(1)
+});
+
+export const verifyEmailSchema = z.object({
+  email: z.string().trim().email().toLowerCase(),
+  otp: z.string().trim().regex(/^\d{6}$/)
+});
+
+export const resendOtpSchema = z.object({
+  email: z.string().trim().email().toLowerCase()
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email().toLowerCase()
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().trim().email().toLowerCase(),
+  otp: z.string().trim().regex(/^\d{6}$/),
+  newPassword: z.string().min(8).max(128)
+});
+
+export const profileUpdateSchema = z.object({
+  name: z.string().trim().max(120).optional(),
+  city: z.string().trim().max(120).optional()
+});
+
+export const passwordUpdateSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128)
 });
 
 export const categorySchema = z.object({
@@ -34,6 +66,13 @@ export const budgetSchema = z.object({
 export const copyBudgetSchema = z.object({
   fromMonth: z.string().regex(/^\d{4}-\d{2}$/),
   toMonth: z.string().regex(/^\d{4}-\d{2}$/)
+});
+
+export const incomeSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/),
+  source: z.string().trim().min(1).max(120).default('Monthly income'),
+  plannedAmount: z.coerce.number().min(0),
+  actualAmount: z.coerce.number().min(0).optional()
 });
 
 export const expenseSchema = z.object({

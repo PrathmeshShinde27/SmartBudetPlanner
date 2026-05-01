@@ -5,9 +5,43 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   name TEXT,
+  phone_country_code TEXT,
+  phone_number TEXT,
+  city TEXT,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_country_code TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'users_role_check'
+  ) THEN
+    ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('user', 'admin'));
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS email_otps (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  purpose TEXT NOT NULL CHECK (purpose IN ('verify_email', 'reset_password')),
+  otp_hash TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  consumed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_otps_user_purpose ON email_otps(user_id, purpose, consumed_at, expires_at);
 
 CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -42,6 +76,8 @@ CREATE TABLE IF NOT EXISTS incomes (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_incomes_user_month_source ON incomes(user_id, month, source);
 
 CREATE TABLE IF NOT EXISTS expenses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

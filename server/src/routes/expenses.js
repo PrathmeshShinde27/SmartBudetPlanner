@@ -19,7 +19,7 @@ expensesRouter.get('/', requireAuth, async (req, res, next) => {
          e.amount,
          e.payment_method AS "paymentMethod",
          e.description,
-         e.expense_date AS "date",
+         e.expense_date::text AS "date",
          e.created_at AS "createdAt"
        FROM expenses e
        JOIN categories c ON c.id = e.category_id
@@ -44,7 +44,7 @@ singleExpenseRouter.post('/', requireAuth, async (req, res, next) => {
        SELECT $1, c.id, $3, $4, $5, $6
        FROM categories c
        WHERE c.id = $2 AND c.user_id = $1 AND c.is_archived = FALSE
-       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date AS "date"`,
+       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date::text AS "date"`,
       [req.user.id, input.categoryId, input.amount, input.paymentMethod, input.description || null, input.date]
     );
 
@@ -77,7 +77,7 @@ singleExpenseRouter.put('/:id', requireAuth, async (req, res, next) => {
          expense_date = COALESCE($7, expense_date),
          updated_at = NOW()
        WHERE id = $1 AND user_id = $2
-       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date AS "date"`,
+       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date::text AS "date"`,
       [
         req.params.id,
         req.user.id,

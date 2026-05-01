@@ -52,6 +52,7 @@ export default function ExpenseForm({ categories, initialValue, onSubmit, onCanc
           min="1"
           step="0.01"
           required
+          placeholder="In ₹"
           value={form.amount}
           onChange={(event) => update('amount', event.target.value)}
         />

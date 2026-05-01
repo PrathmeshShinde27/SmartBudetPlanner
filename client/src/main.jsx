@@ -10,11 +10,16 @@ import Categories from './pages/Categories.jsx';
 import Settings from './pages/Settings.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import Admin from './pages/Admin.jsx';
 import './styles.css';
 
 const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
+  { path: '/verify-email', element: <VerifyEmail /> },
+  { path: '/forgot-password', element: <ForgotPassword /> },
   {
     path: '/',
     element: <App />,
@@ -23,6 +28,7 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'expenses', element: <Expenses /> },
       { path: 'categories', element: <Categories /> },
+      { path: 'admin', element: <Admin /> },
       { path: 'settings', element: <Settings /> }
     ]
   }

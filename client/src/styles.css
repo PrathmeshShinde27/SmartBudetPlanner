@@ -13,11 +13,11 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: #f7f8f3;
+  background: #f4faff;
 }
 
 .dark body {
-  background: #101513;
+  background: #07111f;
 }
 
 @layer components {
@@ -26,7 +26,7 @@ body {
   }
 
   .input {
-    @apply w-full rounded-md border border-black/10 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-moss focus:ring-2 focus:ring-moss/20 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-100;
+    @apply w-full rounded-md border border-sky-100 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-moss focus:ring-2 focus:ring-sky-200 dark:border-sky-900/50 dark:bg-slate-950 dark:text-slate-100;
   }
 
   .btn {
@@ -34,14 +34,14 @@ body {
   }
 
   .btn-primary {
-    @apply btn bg-moss text-white hover:bg-ink dark:bg-mint dark:text-ink dark:hover:bg-white;
+    @apply btn bg-moss text-white hover:bg-sky-700 dark:bg-sky-400 dark:text-ink dark:hover:bg-sky-200;
   }
 
   .btn-secondary {
-    @apply btn border border-black/10 bg-white text-ink hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800;
+    @apply btn border border-sky-100 bg-white text-ink hover:bg-sky-50 dark:border-sky-900/50 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800;
   }
 
   .icon-btn {
-    @apply inline-flex h-9 w-9 items-center justify-center rounded-md border border-black/10 bg-white text-ink transition hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800;
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-md border border-sky-100 bg-white text-ink transition hover:bg-sky-50 dark:border-sky-900/50 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800;
   }
 }
