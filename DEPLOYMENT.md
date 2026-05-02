@@ -30,6 +30,8 @@ Backend skills:
 - Request validation with Zod
 - PostgreSQL schema design
 - Excel import/export with ExcelJS
+- Email OTP verification with Resend
+- Admin-only API routes
 
 Database skills:
 
@@ -38,6 +40,7 @@ Database skills:
 - Foreign keys and indexes
 - Monthly budget aggregation
 - User-level data isolation
+- Role-based admin access
 
 Deployment skills:
 
@@ -46,6 +49,7 @@ Deployment skills:
 - Vercel frontend hosting
 - Render Node.js API hosting
 - Neon managed PostgreSQL
+- Resend domain/email setup
 - Custom domain setup
 
 ## Recommended Free Hosting Stack
@@ -83,6 +87,8 @@ DATABASE_URL=memory://dev
 JWT_SECRET=replace-with-a-long-random-secret
 CLIENT_ORIGINS=http://localhost:5173
 TOKEN_EXPIRES_IN=7d
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxx
+EMAIL_FROM="Smart Budget Planner <noreply@example.com>"
 ```
 
 `client/.env`:
@@ -123,6 +129,8 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/smart_budget_planner
 JWT_SECRET=replace-with-a-long-random-secret
 CLIENT_ORIGINS=http://localhost:5173
 TOKEN_EXPIRES_IN=7d
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxx
+EMAIL_FROM="Smart Budget Planner <noreply@example.com>"
 ```
 
 Run:
@@ -175,6 +183,8 @@ DATABASE_URL=your Neon PostgreSQL URL
 JWT_SECRET=generate a long random secret
 CLIENT_ORIGINS=https://your-domain.com,https://your-vercel-project.vercel.app
 TOKEN_EXPIRES_IN=7d
+RESEND_API_KEY=your Resend API key
+EMAIL_FROM="Smart Budget Planner <noreply@your-domain.com>"
 ```
 
 After first deploy, run the database setup from your local machine using the Neon `DATABASE_URL`:
@@ -220,13 +230,73 @@ CLIENT_ORIGINS=https://your-domain.com,https://your-vercel-project.vercel.app
 
 Then redeploy the Render API.
 
+### 5. Configure Resend Email OTP
+
+The app uses Resend to send OTP emails for:
+
+- New user email verification
+- Forgot password reset
+
+Recommended production setup:
+
+1. Create a Resend account.
+2. Add and verify your domain in Resend, for example `prathmeshshinde.com`.
+3. Add the DNS records shown by Resend inside GoDaddy DNS.
+4. Wait until Resend shows the domain as verified.
+5. Create an API key in Resend.
+6. Add the API key to Render as `RESEND_API_KEY`.
+7. Set `EMAIL_FROM` in Render using a verified sender, for example:
+
+```env
+EMAIL_FROM="Smart Budget Planner <noreply@your-domain.com>"
+```
+
+Do not commit the Resend API key to GitHub.
+
+### 6. Admin Setup
+
+Admin accounts are not hardcoded in the project. Create a normal user first, verify email, then update that user role in Neon.
+
+Example SQL:
+
+```sql
+UPDATE users
+SET role = 'admin'
+WHERE email = 'admin@example.com';
+```
+
+After this, log out and log in again. The sidebar will show the Admin page for users with `role = 'admin'`.
+
+Admin can:
+
+- View all users
+- View a selected user's dashboard
+- View a selected user's categories and expenses
+- Delete a user
+
+Admin cannot modify another user's budgets or expenses.
+
 ## Production Checklist
 
 - Use PostgreSQL, not `memory://dev`.
 - Use a strong `JWT_SECRET`.
 - Set `CLIENT_ORIGINS` to your real frontend domains only.
+- Set `RESEND_API_KEY` and `EMAIL_FROM` for OTP emails.
 - Keep `.env` files out of Git.
 - Run `npm run db:init` before using the production API.
 - Run `npm run seed:excel` only if you want demo/default workbook categories.
-- Test register, login, dashboard, category creation, expense CRUD, month filtering, and Excel export.
+- Test register, email OTP verification, login, forgot password, dashboard, income update, category creation, expense CRUD, month filtering, admin page, and Excel export.
 - Watch free-tier limits before sharing publicly.
+
+## Current Production Services
+
+Use these values as references when checking deployment dashboards:
+
+- Backend API: `https://smart-budget-planner-api-bi1c.onrender.com`
+- Frontend: `https://smart-budet-planner-client.vercel.app`
+- Main domain: `prathmeshshinde.com`
+
+If a custom subdomain is connected later, add that subdomain to both:
+
+- Vercel project domains
+- Render `CLIENT_ORIGINS`

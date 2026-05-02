@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Budget Planner Blackbook</title>
+  <style>
+    :root {
+      --ink: #102033;
+      --muted: #5b6b7f;
+      --blue: #0ea5e9;
+      --blue-dark: #0369a1;
+      --cyan: #67e8f9;
+      --green: #16a34a;
+      --orange: #f97316;
+      --rose: #e11d48;
+      --paper: #f8fbff;
+      --card: #ffffff;
+      --line: #d8e7f5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    .page {
+      page-break-after: always;
+      min-height: 268mm;
+      padding: 4mm 0;
+    }
+
+    .page:last-child { page-break-after: auto; }
+
+    .cover {
+      min-height: 268mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: white;
+      padding: 22mm;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 85% 15%, rgba(103, 232, 249, 0.52), transparent 34%),
+        linear-gradient(135deg, #082f49 0%, #0369a1 48%, #0ea5e9 100%);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .cover::after {
+      content: "";
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      right: -110px;
+      bottom: -120px;
+      border-radius: 999px;
+      border: 38px solid rgba(255, 255, 255, 0.13);
+    }
+
+    .cover-content,
+    .cover-footer { position: relative; z-index: 1; }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 24px 0 14px;
+      font-size: 48px;
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .cover-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 36px;
+      max-width: 620px;
+    }
+
+    .cover-card {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .cover-card b {
+      display: block;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      padding: 10px 14px;
+      color: white;
+      background: linear-gradient(90deg, var(--blue-dark), var(--blue));
+      border-radius: 12px;
+      font-size: 23px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 18px 0 7px;
+      color: var(--blue-dark);
+      font-size: 17px;
+    }
+
+    p { margin: 7px 0; }
+
+    .lead {
+      font-size: 15px;
+      color: #24445f;
+      border-left: 5px solid var(--blue);
+      background: #eaf7ff;
+      padding: 12px 14px;
+      border-radius: 10px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px;
+      box-shadow: 0 8px 20px rgba(14, 89, 134, 0.08);
+    }
+
+    .mini {
+      border-radius: 10px;
+      padding: 10px;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+    }
+
+    .pill {
+      display: inline-block;
+      margin: 3px 4px 3px 0;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-weight: 650;
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 12.5px;
+    }
+
+    th {
+      background: #0ea5e9;
+      color: white;
+      text-align: left;
+      padding: 8px;
+    }
+
+    td {
+      border-bottom: 1px solid #e4eef8;
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td { background: #f7fbff; }
+
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+      color: #075985;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: #082f49;
+      color: #e0f2fe;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid #075985;
+      font-size: 12px;
+    }
+
+    .diagram {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .box {
+      flex: 1;
+      min-height: 74px;
+      background: white;
+      border: 2px solid #7dd3fc;
+      border-radius: 12px;
+      padding: 11px;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.12);
+    }
+
+    .box strong {
+      display: block;
+      color: var(--blue-dark);
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--blue-dark);
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr 40px 1fr;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .note {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 5px solid var(--orange);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #7c2d12;
+    }
+
+    .safe {
+      background: #ecfdf5;
+      border: 1px solid #bbf7d0;
+      border-left: 5px solid var(--green);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #14532d;
+    }
+
+    ul, ol { padding-left: 21px; margin: 8px 0; }
+    li { margin: 4px 0; }
+
+    .toc {
+      columns: 2;
+      column-gap: 22px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 18px;
+    }
+
+    .toc li { break-inside: avoid; }
+
+    .footer {
+      margin-top: 14px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .brand {
+      color: var(--blue-dark);
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <section class="page cover">
+    <div class="cover-content">
+      <span class="eyebrow">Software Project Blackbook</span>
+      <h1>Smart Budget Planner</h1>
+      <p class="subtitle">A full-stack web application for creating monthly budgets, adding daily expenses, verifying users with email OTP, and viewing financial dashboards in real time.</p>
+      <div class="cover-grid">
+        <div class="cover-card"><b>Student Name</b>Prathmesh Shinde</div>
+        <div class="cover-card"><b>Domain</b>prathmeshshinde.com</div>
+        <div class="cover-card"><b>Project Type</b>Full-Stack Web Application</div>
+        <div class="cover-card"><b>Date</b>May 2026</div>
+      </div>
+    </div>
+    <div class="cover-footer">
+      <p><strong>Built with:</strong> React, Tailwind CSS, Node.js, Express, PostgreSQL, JWT, Resend, Vercel, Render, Neon</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <h2>📘 Table of Contents</h2>
+    <ol class="toc">
+      <li>Introduction</li>
+      <li>Project Overview</li>
+      <li>Technology Stack</li>
+      <li>System Architecture</li>
+      <li>Modules Explanation</li>
+      <li>APIs Development</li>
+      <li>Database</li>
+      <li>Authentication & Security</li>
+      <li>Docker & Deployment</li>
+      <li>Domain & Hosting</li>
+      <li>Environment Setup</li>
+      <li>Project Workflow</li>
+      <li>Diagrams & Visuals</li>
+      <li>Conclusion</li>
+    </ol>
+
+    <h2>1. Introduction</h2>
+    <p class="lead">Smart Budget Planner is a web application that helps a user plan monthly income, create category-wise budgets, record expenses, and understand where money is being spent.</p>
+    <h3>What the Project Is About</h3>
+    <p>This project converts the idea of an Excel budget tracker into a proper website. In Excel, a user can enter planned budgets and daily spending manually. In this web app, the same logic is made easier through forms, dashboards, charts, filters, authentication, and a database.</p>
+    <h3>Problem Statement</h3>
+    <p>Many people track money in notebooks or Excel files. This works for simple use, but it becomes difficult when the user wants login security, mobile access, monthly history, automatic totals, charts, and safe storage. The problem is to build a digital system where each user can securely manage personal budget data.</p>
+    <h3>Goal of the Project</h3>
+    <p>The goal is to build a production-ready budget planner that can run locally during development and later go live on a real domain using free hosting services.</p>
+
+    <div class="footer">Smart Budget Planner Blackbook | Prathmesh Shinde</div>
+  </section>
+
+  <section class="page">
+    <h2>2. Project Overview</h2>
+    <p>The application has four main parts: a user interface, a backend API, a PostgreSQL database, and an email service for OTP verification.</p>
+    <div class="grid-2">
+      <div class="card">
+        <h3>What the Application Does</h3>
+        <ul>
+          <li>Allows new users to create an account.</li>
+          <li>Verifies email using OTP before login.</li>
+          <li>Lets users enter monthly income.</li>
+          <li>Lets users create categories like Food, Travel, Bills, Savings, or NPF Fund.</li>
+          <li>Stores planned budget and actual expenses.</li>
+          <li>Shows dashboard cards, pie chart, bar chart, and category comparison.</li>
+          <li>Supports edit, delete, monthly filtering, and Excel export.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Key Features</h3>
+        <span class="pill">Email + Password Login</span>
+        <span class="pill">Email OTP</span>
+        <span class="pill">User Data Isolation</span>
+        <span class="pill">Monthly Budget</span>
+        <span class="pill">Expense CRUD</span>
+        <span class="pill">Charts</span>
+        <span class="pill">Admin View</span>
+        <span class="pill">Excel Export</span>
+        <span class="pill">Mobile Responsive</span>
+      </div>
+    </div>
+    <h3>High-Level Explanation</h3>
+    <p>When a user opens the website, React displays the screens. When the user logs in or adds an expense, React sends a request to the Express backend. The backend checks security, validates data, talks to PostgreSQL, and returns the result. The frontend then updates the page without reloading.</p>
+    <div class="diagram">
+      <div class="box"><strong>👤 User</strong>Uses browser or mobile</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>⚛️ React Frontend</strong>Forms, dashboard, charts</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>🟩 Express API</strong>Business logic and security</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>🐘 PostgreSQL</strong>Stores users, budgets, expenses</div>
+    </div>
+    <div class="footer">Smart Budget Planner Blackbook | Project Overview</div>
+  </section>
+
+  <section class="page">
+    <h2>3. Technology Stack</h2>
+    <p class="lead">A technology stack is the group of languages, tools, frameworks, and services used to build and run the project.</p>
+    <table>
+      <thead><tr><th>Area</th><th>Technology</th><th>Simple Explanation</th><th>Why Used</th></tr></thead>
+      <tbody>
+        <tr><td>Language</td><td>JavaScript</td><td>Main programming language for browser and server.</td><td>One language can be used for both frontend and backend.</td></tr>
+        <tr><td>Frontend</td><td>React</td><td>Builds pages using reusable components.</td><td>Fast UI updates without page reload.</td></tr>
+        <tr><td>Styling</td><td>Tailwind CSS</td><td>Utility classes for clean design.</td><td>Quick responsive design with consistent colors.</td></tr>
+        <tr><td>Charts</td><td>Recharts</td><td>React chart library.</td><td>Easy pie chart and bar chart creation.</td></tr>
+        <tr><td>Backend</td><td>Node.js + Express</td><td>Runs JavaScript APIs on the server.</td><td>Simple, fast REST API development.</td></tr>
+        <tr><td>Database</td><td>PostgreSQL</td><td>Relational database with tables.</td><td>Reliable financial data storage with relations.</td></tr>
+        <tr><td>Auth</td><td>JWT + bcrypt</td><td>Token login and password hashing.</td><td>Keeps login secure and avoids storing plain passwords.</td></tr>
+        <tr><td>Email</td><td>Resend</td><td>Email sending service.</td><td>Sends OTP emails for verification and reset password.</td></tr>
+        <tr><td>Hosting</td><td>Vercel, Render, Neon</td><td>Free hosting stack.</td><td>Frontend, backend, and database can go live separately.</td></tr>
+      </tbody>
+    </table>
+    <h3>Programming Languages Used</h3>
+    <div class="grid-3">
+      <div class="mini"><strong>JavaScript</strong><br>Used for React frontend and Express backend logic.</div>
+      <div class="mini"><strong>SQL</strong><br>Used to create tables and query PostgreSQL data.</div>
+      <div class="mini"><strong>HTML/CSS</strong><br>Used by the browser to display screens and styling.</div>
+    </div>
+    <h3>Important Tools</h3>
+    <p>GitHub stores source code, Vercel hosts the frontend, Render hosts the backend, Neon hosts PostgreSQL, Resend sends OTP emails, and Docker can run a local PostgreSQL database for testing.</p>
+    <div class="footer">Smart Budget Planner Blackbook | Technology Stack</div>
+  </section>
+
+  <section class="page">
+    <h2>4. System Architecture</h2>
+    <p>System architecture means how different parts of the project are arranged and how they communicate.</p>
+    <div class="flow">
+      <div class="box"><strong>Frontend</strong>React app on Vercel<br>Login, forms, dashboard</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Backend</strong>Express API on Render<br>Routes, validation, auth</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Database</strong>Neon PostgreSQL<br>Users, categories, budgets</div>
+    </div>
+    <div class="flow">
+      <div class="box"><strong>Email OTP</strong>User requests OTP</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>API Service</strong>Generates OTP and hash</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Resend</strong>Sends email to user</div>
+    </div>
+    <h3>How the Parts Connect</h3>
+    <ol>
+      <li>The browser loads the React frontend.</li>
+      <li>React uses Axios to call backend API endpoints.</li>
+      <li>The backend checks JWT token for protected routes.</li>
+      <li>The backend reads or writes data in PostgreSQL.</li>
+      <li>The result is sent back as JSON.</li>
+      <li>React updates the dashboard instantly.</li>
+    </ol>
+    <div class="safe"><strong>Example:</strong> When the user adds an expense of ₹250 for Food, the frontend calls <code>POST /expense</code>. The backend saves it in the <code>expenses</code> table. Then the dashboard total spent and category actual amount are recalculated.</div>
+    <div class="footer">Smart Budget Planner Blackbook | Architecture</div>
+  </section>
+
+  <section class="page">
+    <h2>5. Modules Explanation</h2>
+    <div class="card">
+      <h3>🔐 Authentication Module</h3>
+      <p><strong>What it does:</strong> Handles register, login, email verification, forgot password, reset password, profile update, and password update.</p>
+      <p><strong>How it works:</strong> During signup, the password is hashed with bcrypt and saved. An OTP is emailed to the user. After OTP verification, the user can log in and receives a JWT token.</p>
+    </div>
+    <div class="card">
+      <h3>🔌 API Module</h3>
+      <p><strong>What it does:</strong> Provides REST endpoints such as <code>/dashboard</code>, <code>/categories</code>, <code>/expense</code>, and <code>/income</code>.</p>
+      <p><strong>How it works:</strong> Each route receives a request, validates input, checks authentication, performs database queries, and returns JSON.</p>
+    </div>
+    <div class="card">
+      <h3>🐘 Database Module</h3>
+      <p><strong>What it does:</strong> Stores user accounts, OTP records, income, categories, monthly budgets, and expenses.</p>
+      <p><strong>How it works:</strong> Tables are connected with foreign keys. Every financial table stores a <code>user_id</code>, so one user's data does not mix with another user's data.</p>
+    </div>
+    <div class="card">
+      <h3>🎨 Frontend Module</h3>
+      <p><strong>What it does:</strong> Shows login pages, dashboard, expense page, category page, settings page, and admin page.</p>
+      <p><strong>How it works:</strong> React components store form values in state. After API success, the component refreshes data and shows a top-center toast message.</p>
+    </div>
+    <div class="card">
+      <h3>📧 Email OTP System</h3>
+      <p><strong>What it does:</strong> Sends one-time passwords for email verification and password reset.</p>
+      <p><strong>How it works:</strong> The server creates a short OTP, stores only its hash, sends the OTP through Resend, and verifies it before marking email verified or resetting password.</p>
+    </div>
+    <div class="footer">Smart Budget Planner Blackbook | Modules</div>
+  </section>
+
+  <section class="page">
+    <h2>6. APIs Development</h2>
+    <p>API means Application Programming Interface. In this project, APIs are URL endpoints used by the frontend to communicate with the backend.</p>
+    <table>
+      <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th><th>Protected?</th></tr></thead>
+      <tbody>
+        <tr><td>POST</td><td>/auth/register</td><td>Create user and send verification OTP</td><td>No</td></tr>
+        <tr><td>POST</td><td>/auth/login</td><td>Login and receive JWT token</td><td>No</td></tr>
+        <tr><td>POST</td><td>/auth/verify-email</td><td>Verify signup OTP</td><td>No</td></tr>
+        <tr><td>POST</td><td>/auth/forgot-password</td><td>Send password reset OTP</td><td>No</td></tr>
+        <tr><td>POST</td><td>/auth/reset-password</td><td>Set new password after OTP</td><td>No</td></tr>
+        <tr><td>GET</td><td>/dashboard</td><td>Get budget summary and charts data</td><td>Yes</td></tr>
+        <tr><td>GET / POST</td><td>/categories</td><td>List or create categories</td><td>Yes</td></tr>
+        <tr><td>PUT / DELETE</td><td>/categories/:id</td><td>Edit or delete category</td><td>Yes</td></tr>
+        <tr><td>POST</td><td>/expense</td><td>Add daily expense</td><td>Yes</td></tr>
+        <tr><td>GET</td><td>/expenses</td><td>List monthly expenses</td><td>Yes</td></tr>
+        <tr><td>PUT / DELETE</td><td>/expense/:id</td><td>Edit or delete expense</td><td>Yes</td></tr>
+        <tr><td>GET</td><td>/admin/users</td><td>Admin can view users</td><td>Admin only</td></tr>
+      </tbody>
+    </table>
+    <h3>Example API Request</h3>
+    <pre>POST /expense
+Authorization: Bearer &lt;JWT_TOKEN&gt;
+Content-Type: application/json
+
+{
+  "categoryId": "category-uuid",
+  "amount": 250,
+  "paymentMethod": "UPI",
+  "description": "Lunch",
+  "date": "2026-05-02"
+}</pre>
+    <h3>Example API Response</h3>
+    <pre>{
+  "expense": {
+    "id": "expense-uuid",
+    "categoryId": "category-uuid",
+    "amount": 250,
+    "paymentMethod": "UPI",
+    "description": "Lunch",
+    "date": "2026-05-02"
+  }
+}</pre>
+    <div class="footer">Smart Budget Planner Blackbook | APIs</div>
+  </section>
+
+  <section class="page">
+    <h2>7. Database</h2>
+    <p class="lead">The project uses PostgreSQL, hosted on Neon in production. PostgreSQL is a strong relational database, which is suitable for financial records because relationships and data rules are important.</p>
+    <h3>Why PostgreSQL Was Chosen</h3>
+    <ul>
+      <li>It stores data in structured tables.</li>
+      <li>It supports relations using foreign keys.</li>
+      <li>It can calculate totals using SQL aggregation.</li>
+      <li>It is reliable for money-related records.</li>
+      <li>Neon provides a free hosted PostgreSQL option.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Table</th><th>Main Purpose</th><th>Important Columns</th></tr></thead>
+      <tbody>
+        <tr><td>users</td><td>Stores account details</td><td>id, email, password_hash, name, phone, city, email_verified, role</td></tr>
+        <tr><td>email_otps</td><td>Stores OTP hashes</td><td>user_id, purpose, otp_hash, expires_at, consumed_at</td></tr>
+        <tr><td>categories</td><td>Stores budget categories</td><td>user_id, name, group_name, default_budget</td></tr>
+        <tr><td>monthly_budgets</td><td>Stores planned amount per category per month</td><td>user_id, category_id, month, planned_amount</td></tr>
+        <tr><td>incomes</td><td>Stores monthly income/budget</td><td>user_id, month, source, planned_amount, actual_amount</td></tr>
+        <tr><td>expenses</td><td>Stores daily spending</td><td>user_id, category_id, amount, payment_method, expense_date</td></tr>
+      </tbody>
+    </table>
+    <h3>Basic Relationship Diagram</h3>
+    <div class="diagram">
+      <div class="box"><strong>users</strong>One account</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>categories</strong>Many categories</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>expenses</strong>Many expenses</div>
+    </div>
+    <div class="diagram">
+      <div class="box"><strong>users</strong>One account</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>monthly_budgets</strong>Planned amount</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>dashboard</strong>Calculated totals</div>
+    </div>
+    <div class="footer">Smart Budget Planner Blackbook | Database</div>
+  </section>
+
+  <section class="page">
+    <h2>8. Authentication & Security</h2>
+    <h3>Login and Signup System</h3>
+    <p>Users sign up with name, email, phone country code, phone number, city, and password. After signup, the user must verify email with OTP. Login is allowed only after email verification.</p>
+    <h3>Email OTP Verification</h3>
+    <ol>
+      <li>User enters email during signup or forgot password.</li>
+      <li>Backend generates an OTP.</li>
+      <li>Backend stores only a hashed version of the OTP.</li>
+      <li>Resend sends the OTP email from the verified domain email.</li>
+      <li>User enters OTP in the app.</li>
+      <li>Backend checks the OTP and marks it as consumed.</li>
+    </ol>
+    <h3>Password Security</h3>
+    <p>Passwords are never stored directly. The backend uses bcrypt to convert the password into a hash. A hash is like a one-way locked version of the password. Even if someone sees the database, they cannot read the original password.</p>
+    <h3>JWT Token</h3>
+    <p>After login, the server gives a signed JWT token. The frontend sends this token with protected requests. The backend checks the token to know which user is making the request.</p>
+    <h3>Environment Variables</h3>
+    <p>Secrets like database URL, JWT secret, and Resend API key are stored in environment variables. They are not written in the source code.</p>
+    <div class="note"><strong>Important:</strong> Real passwords, real API keys, and real database URLs should never be included in a report, GitHub repository, or screenshot.</div>
+    <div class="footer">Smart Budget Planner Blackbook | Authentication & Security</div>
+  </section>
+
+  <section class="page">
+    <h2>9. Docker & Deployment</h2>
+    <h3>What Docker Is</h3>
+    <p>Docker is a tool that packages software into containers. A container is like a small ready-made environment that includes everything needed to run a service. For example, PostgreSQL can run inside a Docker container without installing PostgreSQL directly on the computer.</p>
+    <h3>How Docker Was Used</h3>
+    <p>Docker was used for local PostgreSQL testing through <code>docker-compose.yml</code>. This lets the developer test with a real PostgreSQL database before using the hosted Neon database.</p>
+    <pre>docker compose up -d postgres</pre>
+    <h3>Container Setup Overview</h3>
+    <div class="flow">
+      <div class="box"><strong>Developer PC</strong>Runs commands locally</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Docker Compose</strong>Starts PostgreSQL service</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>PostgreSQL Container</strong>Local database for testing</div>
+    </div>
+    <h3>Production Deployment</h3>
+    <p>For the live website, separate services were used:</p>
+    <ul>
+      <li><strong>Vercel:</strong> hosts the React frontend.</li>
+      <li><strong>Render:</strong> hosts the Express backend API.</li>
+      <li><strong>Neon:</strong> hosts the PostgreSQL database.</li>
+      <li><strong>GitHub:</strong> stores source code and triggers deployments.</li>
+    </ul>
+    <div class="footer">Smart Budget Planner Blackbook | Docker & Deployment</div>
+  </section>
+
+  <section class="page">
+    <h2>10. Domain & Hosting</h2>
+    <h3>Domain Purchased via GoDaddy</h3>
+    <p>The project domain is <span class="brand">prathmeshshinde.com</span>. A domain is the human-readable website name. Instead of remembering a technical hosting URL, users can open the project through a custom domain or subdomain.</p>
+    <h3>How the Domain Is Connected</h3>
+    <ol>
+      <li>Buy or manage the domain in GoDaddy.</li>
+      <li>Create frontend project in Vercel.</li>
+      <li>Add the custom domain or subdomain in Vercel project settings.</li>
+      <li>Copy DNS records shown by Vercel.</li>
+      <li>Paste those records in GoDaddy DNS management.</li>
+      <li>Wait for DNS propagation.</li>
+      <li>Open the domain and test the website.</li>
+    </ol>
+    <h3>Hosting Process</h3>
+    <div class="diagram">
+      <div class="box"><strong>GitHub</strong>Source code</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Vercel</strong>Frontend build</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Domain</strong>Public website</div>
+    </div>
+    <div class="diagram">
+      <div class="box"><strong>GitHub</strong>Source code</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Render</strong>Backend server</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Neon</strong>Database</div>
+    </div>
+    <h3>Making the Website Live</h3>
+    <p>After frontend and backend are deployed, the frontend environment variable <code>VITE_API_URL</code> points to the Render API URL. The backend <code>CLIENT_ORIGINS</code> allows requests from the Vercel/domain URL. This connection makes the full project work live.</p>
+    <div class="footer">Smart Budget Planner Blackbook | Domain & Hosting</div>
+  </section>
+
+  <section class="page">
+    <h2>11. Environment Setup</h2>
+    <p>Environment variables are settings that change between local testing and production. They help keep source code clean and secrets private.</p>
+    <h3>Backend .env Example</h3>
+    <pre>NODE_ENV=development
+PORT=4001
+DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
+JWT_SECRET=replace-with-a-long-random-secret
+CLIENT_ORIGINS=http://localhost:5173
+TOKEN_EXPIRES_IN=7d
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxx
+EMAIL_FROM="Smart Budget Planner &lt;noreply@example.com&gt;"</pre>
+    <h3>Frontend .env Example</h3>
+    <pre>VITE_API_URL=http://localhost:4001</pre>
+    <h3>Why We Use Placeholders</h3>
+    <p>The examples above show the shape of the configuration only. Real values must be stored privately on the local machine or in hosting dashboards like Render and Vercel.</p>
+    <div class="safe"><strong>Best Practice:</strong> Keep <code>.env</code> files out of GitHub by listing them in <code>.gitignore</code>.</div>
+    <div class="footer">Smart Budget Planner Blackbook | Environment Setup</div>
+  </section>
+
+  <section class="page">
+    <h2>12. Project Workflow</h2>
+    <h3>Development Process</h3>
+    <ol>
+      <li>Studied the Excel budget planner structure.</li>
+      <li>Created database schema for users, categories, monthly budgets, income, OTPs, and expenses.</li>
+      <li>Built Express API routes for authentication, dashboard, category, expense, income, export, and admin views.</li>
+      <li>Built React screens for login, register, email verification, forgot password, dashboard, expenses, categories, settings, and admin.</li>
+      <li>Connected frontend and backend using Axios.</li>
+      <li>Added email OTP using Resend.</li>
+      <li>Tested locally with localhost.</li>
+      <li>Connected hosted PostgreSQL database using Neon.</li>
+      <li>Deployed backend on Render and frontend on Vercel.</li>
+      <li>Prepared custom domain connection through GoDaddy and Vercel.</li>
+    </ol>
+    <h3>How Everything Connects Together</h3>
+    <div class="flow">
+      <div class="box"><strong>Input</strong>User enters income, category, expense</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Process</strong>API validates and saves data</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>Output</strong>Dashboard updates totals and charts</div>
+    </div>
+    <h3>Important Budget Logic</h3>
+    <ul>
+      <li><strong>Total Budget:</strong> Monthly income/budget entered by user.</li>
+      <li><strong>Total Planned:</strong> Sum of all category planned budgets.</li>
+      <li><strong>Total Spent:</strong> Sum of all expenses for selected month.</li>
+      <li><strong>Remaining:</strong> Total Budget minus Total Spent.</li>
+      <li><strong>Category Actual:</strong> Sum of expenses for that category in selected month.</li>
+      <li><strong>Warning:</strong> Show alert only when spending crosses planned category budget.</li>
+    </ul>
+    <div class="footer">Smart Budget Planner Blackbook | Workflow</div>
+  </section>
+
+  <section class="page">
+    <h2>13. Diagrams & Visuals</h2>
+    <h3>Architecture Diagram</h3>
+    <div class="diagram">
+      <div class="box"><strong>🌐 Browser</strong>React pages<br>Dashboard UI</div>
+      <div class="arrow">⇄</div>
+      <div class="box"><strong>🧠 REST API</strong>Express routes<br>JWT auth<br>Zod validation</div>
+      <div class="arrow">⇄</div>
+      <div class="box"><strong>🗄️ PostgreSQL</strong>Tables<br>Relations<br>Aggregations</div>
+    </div>
+    <h3>Data Flow Diagram</h3>
+    <div class="flow">
+      <div class="box"><strong>1. User Action</strong>Add expense ₹500</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>2. API Request</strong>POST /expense</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>3. Database</strong>Insert row in expenses</div>
+    </div>
+    <div class="flow">
+      <div class="box"><strong>4. Dashboard API</strong>GET /dashboard</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>5. Calculations</strong>Total spent, remaining</div>
+      <div class="arrow">→</div>
+      <div class="box"><strong>6. UI Update</strong>Charts and cards refresh</div>
+    </div>
+    <h3>Module Connection Diagram</h3>
+    <div class="grid-3">
+      <div class="mini"><strong>Auth Module</strong><br>Protects user account and creates JWT.</div>
+      <div class="mini"><strong>Budget Module</strong><br>Stores income and planned category budgets.</div>
+      <div class="mini"><strong>Expense Module</strong><br>Records spending by category and date.</div>
+      <div class="mini"><strong>Dashboard Module</strong><br>Aggregates totals and chart data.</div>
+      <div class="mini"><strong>Email Module</strong><br>Sends OTP for verification and reset.</div>
+      <div class="mini"><strong>Admin Module</strong><br>Allows read-only user review and user delete.</div>
+    </div>
+    <div class="footer">Smart Budget Planner Blackbook | Diagrams</div>
+  </section>
+
+  <section class="page">
+    <h2>14. Conclusion</h2>
+    <h3>What Was Achieved</h3>
+    <p>Smart Budget Planner was successfully built as a full-stack web application. It supports real user accounts, email OTP verification, PostgreSQL database storage, monthly budgeting, category planning, daily expense logging, dashboard charts, Excel export, and deployment-ready configuration.</p>
+    <h3>What Was Learned</h3>
+    <ul>
+      <li>How to convert Excel logic into a real web application.</li>
+      <li>How frontend, backend, database, and APIs connect.</li>
+      <li>How to store financial data securely per user.</li>
+      <li>How password hashing and JWT authentication work.</li>
+      <li>How email OTP improves account verification.</li>
+      <li>How to deploy a project using Vercel, Render, Neon, and a GoDaddy domain.</li>
+    </ul>
+    <h3>Future Improvements</h3>
+    <ul>
+      <li>Add stronger admin controls with audit logs.</li>
+      <li>Add recurring expenses like rent or subscriptions.</li>
+      <li>Add email alerts when a category crosses planned budget.</li>
+      <li>Add PDF reports for monthly summary.</li>
+      <li>Add bank statement import with automatic categorization.</li>
+      <li>Add two-factor authentication for admin users.</li>
+    </ul>
+    <div class="safe"><strong>Final Result:</strong> The project is simple enough for daily use, but technically strong enough to be hosted as a real website with separate frontend, backend, and database services.</div>
+    <div class="footer">Prepared for Smart Budget Planner | Built by Prathmesh Shinde | prathmeshshinde.com</div>
+  </section>
+</body>
+</html>
