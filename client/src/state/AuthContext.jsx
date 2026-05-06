@@ -1,7 +1,9 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api.js';
 
 const AuthContext = createContext(null);
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const activityEvents = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'pointerdown'];
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('sbp_token'));
@@ -58,12 +60,36 @@ export function AuthProvider({ children }) {
     await api.put('/auth/password', input);
   }
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem('sbp_token');
     localStorage.removeItem('sbp_user');
     setToken(null);
     setUser(null);
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let timeoutId;
+
+    function expireSession() {
+      sessionStorage.setItem('sbp_login_message', 'You were logged out after 5 minutes of inactivity.');
+      logout();
+      window.location.assign('/login');
+    }
+
+    function resetTimer() {
+      window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(expireSession, IDLE_TIMEOUT_MS);
+    }
+
+    resetTimer();
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true }));
+    return () => {
+      window.clearTimeout(timeoutId);
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, resetTimer));
+    };
+  }, [logout, token]);
 
   const value = useMemo(
     () => ({
@@ -80,7 +106,7 @@ export function AuthProvider({ children }) {
       updatePassword,
       logout
     }),
-    [token, user]
+    [logout, token, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

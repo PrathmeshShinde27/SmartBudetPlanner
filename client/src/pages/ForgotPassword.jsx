@@ -3,6 +3,9 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import AuthShell from '../components/AuthShell.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 
+const passwordPattern = '^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$';
+const passwordHint = 'Use 8+ characters with at least one letter, one number, and one special character.';
+
 export default function ForgotPassword() {
   const { isAuthenticated, forgotPassword, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -67,8 +70,9 @@ export default function ForgotPassword() {
         {otpSent ? (
           <form onSubmit={submitReset} className="mt-6 space-y-4 border-t border-slate-800 pt-6">
             <input className="input border-slate-700 bg-slate-900 text-white" inputMode="numeric" maxLength={6} required placeholder="OTP" value={form.otp} onChange={(e) => setForm({ ...form, otp: e.target.value.replace(/\D/g, '') })} />
-            <input className="input border-slate-700 bg-slate-900 text-white" type="password" minLength={8} required placeholder="New password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
+            <input className="input border-slate-700 bg-slate-900 text-white" type="password" minLength={8} pattern={passwordPattern} title={passwordHint} required placeholder="Example: Budget@123" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
             <input className="input border-slate-700 bg-slate-900 text-white" type="password" minLength={8} required placeholder="Confirm new password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
+            <p className="text-xs text-sky-200">{passwordHint}</p>
             <button className="w-full rounded-xl bg-sky-400 px-4 py-4 text-sm font-bold text-slate-950 transition hover:bg-sky-300" type="submit">Reset password</button>
           </form>
         ) : null}

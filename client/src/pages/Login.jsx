@@ -9,7 +9,11 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState('');
-  const [message, setMessage] = useState(location.state?.message || '');
+  const [message, setMessage] = useState(() => {
+    const idleMessage = sessionStorage.getItem('sbp_login_message');
+    if (idleMessage) sessionStorage.removeItem('sbp_login_message');
+    return location.state?.message || idleMessage || '';
+  });
   const [form, setForm] = useState({ email: location.state?.email || '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 

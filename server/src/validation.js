@@ -1,12 +1,21 @@
 import { z } from 'zod';
 
+const passwordMessage = 'Password must be 8+ characters and include at least one letter, one number, and one special character';
+const strongPasswordSchema = z
+  .string()
+  .min(8, passwordMessage)
+  .max(128)
+  .regex(/[A-Za-z]/, passwordMessage)
+  .regex(/[0-9]/, passwordMessage)
+  .regex(/[^A-Za-z0-9]/, passwordMessage);
+
 export const registerSchema = z.object({
   name: z.string().trim().max(120).optional(),
   email: z.string().trim().email().toLowerCase(),
   phoneCountryCode: z.string().trim().max(8).optional(),
   phoneNumber: z.string().trim().max(20).optional(),
   city: z.string().trim().max(120).optional(),
-  password: z.string().min(8).max(128)
+  password: strongPasswordSchema
 });
 
 export const loginSchema = z.object({
@@ -30,7 +39,7 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z.object({
   email: z.string().trim().email().toLowerCase(),
   otp: z.string().trim().regex(/^\d{6}$/),
-  newPassword: z.string().min(8).max(128)
+  newPassword: strongPasswordSchema
 });
 
 export const profileUpdateSchema = z.object({
@@ -40,7 +49,7 @@ export const profileUpdateSchema = z.object({
 
 export const passwordUpdateSchema = z.object({
   currentPassword: z.string().min(1),
-  newPassword: z.string().min(8).max(128)
+  newPassword: strongPasswordSchema
 });
 
 export const categorySchema = z.object({

@@ -1,0 +1,20 @@
+{
+  "name": "Smart Budget Planner",
+  "short_name": "Smart Budget",
+  "description": "Plan monthly income, category budgets, and daily expenses with live dashboard charts.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4faff",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

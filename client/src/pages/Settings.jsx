@@ -5,6 +5,9 @@ import Toast from '../components/Toast.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useBudget } from '../state/BudgetContext.jsx';
 
+const passwordPattern = '^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$';
+const passwordHint = 'Use 8+ characters with at least one letter, one number, and one special character.';
+
 export default function Settings() {
   const { month, refresh } = useBudget();
   const { user, updateProfile, updatePassword } = useAuth();
@@ -103,8 +106,9 @@ export default function Settings() {
         <h3 className="font-semibold">Change password</h3>
         <form onSubmit={savePassword} className="mt-4 grid gap-3 md:grid-cols-3">
           <input className="input" type="password" placeholder="Current password" value={passwords.currentPassword} onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })} />
-          <input className="input" type="password" placeholder="New password" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} />
+          <input className="input" type="password" minLength={8} pattern={passwordPattern} title={passwordHint} placeholder="Example: Budget@123" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} />
           <input className="input" type="password" placeholder="Confirm new password" value={passwords.confirmPassword} onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })} />
+          <p className="text-xs text-zinc-500 md:col-span-3">{passwordHint}</p>
           <div className="md:col-span-3">
             <button className="btn-primary" type="submit">Update password</button>
           </div>

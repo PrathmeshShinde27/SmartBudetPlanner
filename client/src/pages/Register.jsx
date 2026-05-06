@@ -3,6 +3,9 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import AuthShell from '../components/AuthShell.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 
+const passwordPattern = '^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$';
+const passwordHint = 'Use 8+ characters with at least one letter, one number, and one special character.';
+
 export default function Register() {
   const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -97,14 +100,14 @@ export default function Register() {
           </label>
           <label>
             <span className="mb-2 block text-sm font-medium text-sky-100">Password</span>
-            <input className="input border-slate-700 bg-slate-900 text-white placeholder:text-slate-500" type="password" minLength={8} required placeholder="Use 8+ characters" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <input className="input border-slate-700 bg-slate-900 text-white placeholder:text-slate-500" type="password" minLength={8} pattern={passwordPattern} title={passwordHint} required placeholder="Example: Budget@123" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           </label>
           <label>
             <span className="mb-2 block text-sm font-medium text-sky-100">Confirm password</span>
             <input className="input border-slate-700 bg-slate-900 text-white placeholder:text-slate-500" type="password" minLength={8} required placeholder="Confirm password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
           </label>
         </div>
-        <p className="mt-4 text-xs text-sky-200">Use 8+ characters. A stronger password should include uppercase, lowercase, number, and special character.</p>
+        <p className="mt-4 text-xs text-sky-200">{passwordHint}</p>
         <button className="mt-5 w-full rounded-xl bg-sky-400 px-4 py-4 text-sm font-bold text-slate-950 transition hover:bg-sky-300" type="submit">Create account</button>
       </form>
     </AuthShell>

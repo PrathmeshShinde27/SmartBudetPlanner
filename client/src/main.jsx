@@ -13,6 +13,7 @@ import Register from './pages/Register.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import Admin from './pages/Admin.jsx';
+import { registerServiceWorker } from './registerServiceWorker.js';
 import './styles.css';
 
 const router = createBrowserRouter([
@@ -43,3 +44,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </React.StrictMode>
 );
+
+registerServiceWorker();
