@@ -11,6 +11,7 @@ import { expensesRouter, singleExpenseRouter } from './routes/expenses.js';
 import { exportRouter } from './routes/export.js';
 import { incomeRouter } from './routes/income.js';
 import { adminRouter } from './routes/admin.js';
+import { paymentTypesRouter } from './routes/paymentTypes.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { devMemoryRouter, seedDevMemory } from './routes/devMemory.js';
 
@@ -56,6 +57,7 @@ if (config.databaseUrl === 'memory://dev') {
   app.use('/categories', categoriesRouter);
   app.use('/category', categoriesRouter);
   app.use('/income', incomeRouter);
+  app.use('/payment-types', paymentTypesRouter);
   app.use('/admin', adminRouter);
   app.use('/budgets', budgetsRouter);
   app.use('/expenses', expensesRouter);

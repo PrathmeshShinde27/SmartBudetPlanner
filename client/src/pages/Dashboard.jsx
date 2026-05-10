@@ -1,4 +1,4 @@
-import { AlertTriangle, ClipboardList, Download, Scale, Wallet, WalletCards } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, ClipboardList, Download, Scale, Wallet, WalletCards } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import StatCard from '../components/StatCard.jsx';
 import ExpenseForm from '../components/ExpenseForm.jsx';
 import Toast from '../components/Toast.jsx';
@@ -22,9 +22,65 @@ import { useBudget } from '../state/BudgetContext.jsx';
 
 const colors = ['#41644a', '#ff7a59', '#f4b942', '#6aa5b8', '#8f6fbd', '#7aa95c', '#d65f5f'];
 
+function formatYmd(date) {
+  const year = date.getFullYear();
+  const monthValue = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${monthValue}-${day}`;
+}
+
+function currentWeekStart() {
+  const date = new Date();
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return formatYmd(date);
+}
+
+function shiftWeek(weekStart, direction) {
+  const date = new Date(`${weekStart}T00:00:00`);
+  date.setDate(date.getDate() + direction * 7);
+  return formatYmd(date);
+}
+
+function weekEndFromStart(weekStart) {
+  const date = new Date(`${weekStart}T00:00:00`);
+  date.setDate(date.getDate() + 6);
+  return formatYmd(date);
+}
+
 export default function Dashboard() {
-  const { dashboard, categories, refresh, month, loading } = useBudget();
+  const { dashboard, categories, paymentTypes, refresh, month, loading } = useBudget();
   const [toast, setToast] = useState(null);
+  const [weekStart, setWeekStart] = useState(() => currentWeekStart());
+  const [weeklySummary, setWeeklySummary] = useState(null);
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadWeek() {
+      try {
+        setWeeklyLoading(true);
+        const response = await api.get('/dashboard/week', { params: { weekStart } });
+        if (!ignore) {
+          setWeeklySummary(response.data);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setToast({ message: error.response?.data?.message || 'Could not load weekly spend', type: 'error' });
+          window.setTimeout(() => setToast(null), 3000);
+        }
+      } finally {
+        if (!ignore) {
+          setWeeklyLoading(false);
+        }
+      }
+    }
+
+    loadWeek();
+    return () => {
+      ignore = true;
+    };
+  }, [weekStart]);
 
   async function addExpense(input) {
     try {
@@ -43,7 +99,7 @@ export default function Dashboard() {
     const url = URL.createObjectURL(response.data);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `smart-budget-${month}.xlsx`;
+    a.download = `Smart-Budget-Planer-${month}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -54,7 +110,8 @@ export default function Dashboard() {
 
   const pieData = dashboard.categories.filter((item) => item.actual > 0).map((item) => ({
     name: item.name,
-    value: item.actual
+    value: item.actual,
+    percent: dashboard.totals.totalSpent > 0 ? (item.actual / dashboard.totals.totalSpent) * 100 : 0
   }));
 
   return (
@@ -89,7 +146,7 @@ export default function Dashboard() {
         <StatCard label="Remaining" value={currency.format(dashboard.totals.remaining)} icon={Scale} tone={dashboard.totals.remaining < 0 ? 'hot' : 'good'} />
       </div>
 
-      <ExpenseForm categories={categories} onSubmit={addExpense} />
+      <ExpenseForm categories={categories} paymentTypes={paymentTypes} onSubmit={addExpense} />
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-5">
         <section className="panel min-w-0 p-4 xl:col-span-2">
@@ -97,10 +154,16 @@ export default function Dashboard() {
           <div className="mt-4 h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={100} paddingAngle={2}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={110}
+                  label={({ name, percent }) => `${name} ${percent.toFixed(1)}%`}
+                >
                   {pieData.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
                 </Pie>
-                <Tooltip formatter={(value) => currency.format(value)} />
+                <Tooltip formatter={(value, name, props) => `${currency.format(value)} (${props.payload.percent.toFixed(1)}%)`} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -117,7 +180,7 @@ export default function Dashboard() {
                 <YAxis />
                 <Tooltip formatter={(value) => currency.format(value)} />
                 <Legend />
-                <Bar dataKey="planned" fill="#41644a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="planned" fill="#0284c7" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="actual" fill="#ff7a59" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -127,12 +190,12 @@ export default function Dashboard() {
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-5">
         <section className="panel min-w-0 p-4 xl:col-span-3">
-          <h3 className="font-semibold">50/30/20 summary</h3>
+          <h3 className="font-semibold">Monthly analysis</h3>
           <div className="mt-4 max-w-full overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="text-xs uppercase text-zinc-500">
                 <tr>
-                  <th className="py-2">Group</th>
+                  <th className="py-2">Bucket</th>
                   <th>Target</th>
                   <th>Planned</th>
                   <th>Actual</th>
@@ -155,13 +218,59 @@ export default function Dashboard() {
         </section>
 
         <section className="panel min-w-0 p-4 xl:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-semibold">Weekly analysis</h3>
+            <div className="flex items-center gap-2">
+              <button
+                className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-sky-200 transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-400 dark:text-ink dark:shadow-none dark:hover:bg-sky-300"
+                disabled={weeklyLoading}
+                onClick={() => setWeekStart((value) => shiftWeek(value, -1))}
+                title="Previous week"
+                type="button"
+              >
+                <ChevronLeft size={16} />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
+              <button
+                className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-sky-200 transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-sky-400 dark:text-ink dark:shadow-none dark:hover:bg-sky-300"
+                disabled={weeklyLoading}
+                onClick={() => setWeekStart((value) => shiftWeek(value, 1))}
+                title="Next week"
+                type="button"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 text-sm">
+            <div className="rounded-lg border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/30">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Selected week</p>
+                  <p className="mt-1 font-medium">
+                    Week: {prettyDate(weeklySummary?.startDate || weekStart)} - {prettyDate(weeklySummary?.endDate || weekEndFromStart(weekStart))}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-zinc-500">Weekly spend</p>
+                  <p className="text-xl font-semibold text-sky-700 dark:text-sky-300">
+                    {weeklyLoading ? 'Loading...' : currency.format(weeklySummary?.actual || 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="panel min-w-0 p-4 xl:col-span-2">
           <h3 className="font-semibold">Recent expenses</h3>
           <div className="mt-3 space-y-3">
             {dashboard.recentExpenses.length ? dashboard.recentExpenses.map((expense) => (
               <div key={expense.id} className="flex items-center justify-between gap-3 border-b border-black/10 pb-3 text-sm last:border-0 dark:border-white/10">
                 <div>
                   <p className="font-medium">{expense.categoryName}</p>
-                  <p className="text-xs text-zinc-500">{prettyDate(expense.date)} · {expense.paymentMethod}</p>
+                  <p className="text-xs text-zinc-500">Bill {prettyDate(expense.billDate || expense.date)} · {expense.paymentMethod}</p>
                 </div>
                 <p className="font-semibold">{currency.format(expense.amount)}</p>
               </div>

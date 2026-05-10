@@ -2,15 +2,14 @@ import { useEffect, useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { today } from '../lib/format.js';
 
-const methods = ['Cash', 'UPI', 'Card', 'Net Banking', 'Wallet'];
-
-export default function ExpenseForm({ categories, initialValue, onSubmit, onCancel, compact = false }) {
+export default function ExpenseForm({ categories, paymentTypes = [], initialValue, onSubmit, onCancel, compact = false }) {
   const [form, setForm] = useState({
     amount: '',
     categoryId: '',
     paymentMethod: 'UPI',
     description: '',
-    date: today()
+    date: today(),
+    billDate: today()
   });
 
   useEffect(() => {
@@ -20,7 +19,8 @@ export default function ExpenseForm({ categories, initialValue, onSubmit, onCanc
         categoryId: initialValue.categoryId,
         paymentMethod: initialValue.paymentMethod,
         description: initialValue.description || '',
-        date: String(initialValue.date).slice(0, 10)
+        date: String(initialValue.date).slice(0, 10),
+        billDate: String(initialValue.billDate || initialValue.date).slice(0, 10)
       });
     } else if (categories[0]) {
       setForm((value) => ({ ...value, categoryId: value.categoryId || categories[0].id }));
@@ -38,7 +38,7 @@ export default function ExpenseForm({ categories, initialValue, onSubmit, onCanc
       amount: Number(form.amount)
     });
     if (!initialValue) {
-      setForm((current) => ({ ...current, amount: '', description: '', date: today() }));
+      setForm((current) => ({ ...current, amount: '', description: '' }));
     }
   }
 
@@ -73,20 +73,24 @@ export default function ExpenseForm({ categories, initialValue, onSubmit, onCanc
         </select>
       </label>
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-500">Method</span>
+        <span className="mb-1 block text-xs font-medium text-zinc-500">Payment Type</span>
         <select
           className="input"
           value={form.paymentMethod}
           onChange={(event) => update('paymentMethod', event.target.value)}
         >
-          {methods.map((method) => (
-            <option key={method}>{method}</option>
+          {paymentTypes.map((method) => (
+            <option key={method.id || method.name}>{method.name}</option>
           ))}
         </select>
       </label>
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-500">Date</span>
+        <span className="mb-1 block text-xs font-medium text-zinc-500">Expense date</span>
         <input className="input" type="date" value={form.date} onChange={(event) => update('date', event.target.value)} />
+      </label>
+      <label>
+        <span className="mb-1 block text-xs font-medium text-zinc-500">Bill date</span>
+        <input className="input" type="date" value={form.billDate} onChange={(event) => update('billDate', event.target.value)} />
       </label>
       <label className="md:col-span-4">
         <span className="mb-1 block text-xs font-medium text-zinc-500">Description</span>

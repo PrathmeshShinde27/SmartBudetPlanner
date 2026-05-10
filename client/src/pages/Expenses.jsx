@@ -7,7 +7,7 @@ import { currency, prettyDate } from '../lib/format.js';
 import { useBudget } from '../state/BudgetContext.jsx';
 
 export default function Expenses() {
-  const { expenses, categories, refresh } = useBudget();
+  const { expenses, categories, paymentTypes, refresh } = useBudget();
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState(null);
 
@@ -55,16 +55,16 @@ export default function Expenses() {
         <p className="text-sm text-zinc-500">Add, edit, and delete daily spending without reloading the page.</p>
       </div>
 
-      <ExpenseForm categories={categories} initialValue={editing} onSubmit={editing ? updateExpense : addExpense} onCancel={editing ? () => setEditing(null) : null} />
+      <ExpenseForm categories={categories} paymentTypes={paymentTypes} initialValue={editing} onSubmit={editing ? updateExpense : addExpense} onCancel={editing ? () => setEditing(null) : null} />
 
       <section className="panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-950">
               <tr>
-                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Bill date</th>
                 <th>Category</th>
-                <th>Method</th>
+                <th>Payment Type</th>
                 <th>Description</th>
                 <th className="text-right">Amount</th>
                 <th className="w-24 text-right"></th>
@@ -73,7 +73,7 @@ export default function Expenses() {
             <tbody>
               {expenses.map((expense) => (
                 <tr key={expense.id} className="border-t border-black/10 dark:border-white/10">
-                  <td className="px-4 py-3">{prettyDate(expense.date)}</td>
+                  <td className="px-4 py-3">{prettyDate(expense.billDate || expense.date)}</td>
                   <td>{expense.categoryName}</td>
                   <td>{expense.paymentMethod}</td>
                   <td className="max-w-xs truncate text-zinc-500">{expense.description || '-'}</td>

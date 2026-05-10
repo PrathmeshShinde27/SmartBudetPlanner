@@ -71,7 +71,8 @@ adminRouter.get('/users/:userId/categories', async (req, res, next) => {
        LEFT JOIN expenses e
          ON e.category_id = c.id AND e.user_id = c.user_id AND to_char(e.expense_date, 'YYYY-MM') = $2
        WHERE c.user_id = $1
-       GROUP BY c.id, mb.planned_amount
+       GROUP BY c.id, mb.id, mb.planned_amount
+       HAVING mb.id IS NOT NULL OR COUNT(e.id) > 0
        ORDER BY c.is_archived ASC,
          CASE c.group_name WHEN 'Needs' THEN 1 WHEN 'Wants' THEN 2 ELSE 3 END,
          c.name`,
@@ -104,6 +105,7 @@ adminRouter.get('/users/:userId/expenses', async (req, res, next) => {
          e.payment_method AS "paymentMethod",
          e.description,
          e.expense_date::text AS "date",
+         e.bill_date::text AS "billDate",
          e.created_at AS "createdAt"
        FROM expenses e
        JOIN categories c ON c.id = e.category_id

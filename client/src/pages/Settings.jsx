@@ -62,7 +62,7 @@ export default function Settings() {
     const url = URL.createObjectURL(response.data);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `smart-budget-${month}.xlsx`;
+    a.download = `Smart-Budget-Planer-${month}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   }

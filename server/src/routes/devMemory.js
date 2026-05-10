@@ -139,7 +139,7 @@ function dashboardFor(userId, rawMonth) {
 
   const recentExpenses = expenses
     .filter((expense) => expense.userId === userId && expense.date.startsWith(month))
-    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+    .sort((a, b) => (b.billDate || b.date).localeCompare(a.billDate || a.date) || b.createdAt.localeCompare(a.createdAt))
     .slice(0, 8)
     .map((expense) => {
       const category = categories.find((item) => item.id === expense.categoryId);
@@ -531,7 +531,7 @@ router.get('/expenses', requireAuth, (req, res, next) => {
       month,
       expenses: expenses
         .filter((expense) => expense.userId === req.user.id && expense.date.startsWith(month))
-        .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+        .sort((a, b) => (b.billDate || b.date).localeCompare(a.billDate || a.date) || b.createdAt.localeCompare(a.createdAt))
         .map((expense) => {
           const category = categories.find((item) => item.id === expense.categoryId);
           return { ...expense, categoryName: category?.name, groupName: category?.groupName };
@@ -555,6 +555,7 @@ router.post('/expense', requireAuth, (req, res, next) => {
       paymentMethod: input.paymentMethod,
       description: input.description || null,
       date: input.date,
+      billDate: input.billDate || input.date,
       createdAt: new Date().toISOString()
     };
     expenses.push(expense);
@@ -574,7 +575,8 @@ router.put('/expense/:id', requireAuth, (req, res, next) => {
       amount: input.amount ?? expense.amount,
       paymentMethod: input.paymentMethod ?? expense.paymentMethod,
       description: input.description ?? expense.description,
-      date: input.date ?? expense.date
+      date: input.date ?? expense.date,
+      billDate: input.billDate ?? expense.billDate
     });
     res.json({ expense });
   } catch (error) {

@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import express from 'express';
+import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getDashboard } from '../services/dashboardService.js';
 
@@ -8,6 +9,24 @@ export const exportRouter = express.Router();
 exportRouter.get('/excel', requireAuth, async (req, res, next) => {
   try {
     const dashboard = await getDashboard(req.user.id, req.query.month);
+    const userName = req.user.name || req.user.email?.split('@')[0] || 'User';
+    const expenseResult = await query(
+      `SELECT
+         e.bill_date::text AS "billDate",
+         c.name AS category,
+         e.description,
+         c.group_name AS bucket,
+         COALESCE(mb.planned_amount, c.default_budget, 0) AS planned,
+         e.amount AS actual
+       FROM expenses e
+       JOIN categories c ON c.id = e.category_id
+       LEFT JOIN monthly_budgets mb
+         ON mb.category_id = c.id AND mb.user_id = c.user_id AND mb.month = $2
+       WHERE e.user_id = $1 AND to_char(e.expense_date, 'YYYY-MM') = $2
+       ORDER BY e.bill_date ASC, c.name ASC, e.created_at ASC`,
+      [req.user.id, dashboard.month]
+    );
+
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Smart Budget Planner';
     workbook.company = 'Prathmesh Shinde';
@@ -16,28 +35,42 @@ exportRouter.get('/excel', requireAuth, async (req, res, next) => {
     const sheet = workbook.addWorksheet(dashboard.month);
 
     sheet.addRow([`Smart Budget Planner - ${dashboard.month}`]);
-    sheet.mergeCells('A1:F1');
+    sheet.mergeCells('A1:H1');
     sheet.getCell('A1').font = { bold: true, size: 16 };
     sheet.addRow(['Created by Prathmesh Shinde | https://prathmeshshinde.com']);
-    sheet.mergeCells('A2:F2');
+    sheet.mergeCells('A2:H2');
     sheet.getCell('A2').font = { italic: true, color: { argb: 'FF0284C7' } };
+    sheet.addRow([`User: ${userName}`]);
+    sheet.mergeCells('A3:H3');
 
     sheet.addRow([]);
     sheet.addRow(['Total Budget', dashboard.totals.totalBudget]);
     sheet.addRow(['Total Planned', dashboard.totals.totalPlanned]);
     sheet.addRow(['Total Spent', dashboard.totals.totalSpent]);
     sheet.addRow(['Remaining', dashboard.totals.remaining]);
-    sheet.addRow(['Savings', dashboard.totals.savings]);
     sheet.addRow([]);
-    sheet.addRow(['Category', 'Group', 'Planned', 'Actual', 'Difference', 'Used %']);
+    sheet.addRow(['Bill date', 'Category', 'Description', 'Bucket', 'Planned', 'Actual', 'Difference', 'Used %']);
     sheet.getRow(10).font = { bold: true };
 
-    dashboard.categories.forEach((item) => {
-      sheet.addRow([item.name, item.groupName, item.planned, item.actual, item.difference, item.usedPercent / 100]);
+    expenseResult.rows.forEach((item) => {
+      const planned = Number(item.planned || 0);
+      const actual = Number(item.actual || 0);
+      sheet.addRow([
+        item.billDate,
+        item.category,
+        item.description || '-',
+        item.bucket,
+        planned,
+        actual,
+        planned - actual,
+        planned > 0 ? actual / planned : 0
+      ]);
     });
 
     sheet.columns = [
-      { width: 32 },
+      { width: 14 },
+      { width: 28 },
+      { width: 34 },
       { width: 14 },
       { width: 14 },
       { width: 14 },
@@ -45,16 +78,20 @@ exportRouter.get('/excel', requireAuth, async (req, res, next) => {
       { width: 12 }
     ];
 
-    sheet.getColumn('C').numFmt = '"₹"#,##0.00';
-    sheet.getColumn('D').numFmt = '"₹"#,##0.00';
-    sheet.getColumn('E').numFmt = '"₹"#,##0.00';
-    sheet.getColumn('F').numFmt = '0%';
+    sheet.getColumn('E').numFmt = '"Rs."#,##0.00';
+    sheet.getColumn('F').numFmt = '"Rs."#,##0.00';
+    sheet.getColumn('G').numFmt = '"Rs."#,##0.00';
+    sheet.getColumn('H').numFmt = '0%';
 
+    const date = new Date(`${dashboard.month}-01T00:00:00Z`);
+    const monthName = date.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+    const safeUserName = userName.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'User';
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      'Content-Disposition',
+      `attachment; filename="Smart-Budget-Planer-${date.getUTCFullYear()}-${monthName}-${safeUserName}.xlsx"`
     );
-    res.setHeader('Content-Disposition', `attachment; filename="smart-budget-${dashboard.month}.xlsx"`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {

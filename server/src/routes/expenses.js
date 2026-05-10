@@ -20,11 +20,12 @@ expensesRouter.get('/', requireAuth, async (req, res, next) => {
          e.payment_method AS "paymentMethod",
          e.description,
          e.expense_date::text AS "date",
+         e.bill_date::text AS "billDate",
          e.created_at AS "createdAt"
        FROM expenses e
        JOIN categories c ON c.id = e.category_id
        WHERE e.user_id = $1 AND to_char(e.expense_date, 'YYYY-MM') = $2
-       ORDER BY e.expense_date DESC, e.created_at DESC`,
+       ORDER BY e.bill_date DESC, e.created_at DESC`,
       [req.user.id, month]
     );
     res.json({
@@ -40,12 +41,12 @@ singleExpenseRouter.post('/', requireAuth, async (req, res, next) => {
   try {
     const input = expenseSchema.parse(req.body);
     const result = await query(
-      `INSERT INTO expenses (user_id, category_id, amount, payment_method, description, expense_date)
-       SELECT $1, c.id, $3, $4, $5, $6
+      `INSERT INTO expenses (user_id, category_id, amount, payment_method, description, expense_date, bill_date)
+       SELECT $1, c.id, $3, $4, $5, $6, $7
        FROM categories c
        WHERE c.id = $2 AND c.user_id = $1 AND c.is_archived = FALSE
-       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date::text AS "date"`,
-      [req.user.id, input.categoryId, input.amount, input.paymentMethod, input.description || null, input.date]
+       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date::text AS "date", bill_date::text AS "billDate"`,
+      [req.user.id, input.categoryId, input.amount, input.paymentMethod, input.description || null, input.date, input.billDate || input.date]
     );
 
     if (!result.rows[0]) return res.status(404).json({ message: 'Category not found' });
@@ -75,9 +76,10 @@ singleExpenseRouter.put('/:id', requireAuth, async (req, res, next) => {
          payment_method = COALESCE($5, payment_method),
          description = COALESCE($6, description),
          expense_date = COALESCE($7, expense_date),
+         bill_date = COALESCE($8, bill_date),
          updated_at = NOW()
        WHERE id = $1 AND user_id = $2
-       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date::text AS "date"`,
+       RETURNING id, category_id AS "categoryId", amount, payment_method AS "paymentMethod", description, expense_date::text AS "date", bill_date::text AS "billDate"`,
       [
         req.params.id,
         req.user.id,
@@ -85,7 +87,8 @@ singleExpenseRouter.put('/:id', requireAuth, async (req, res, next) => {
         input.amount,
         input.paymentMethod,
         input.description,
-        input.date
+        input.date,
+        input.billDate
       ]
     );
 

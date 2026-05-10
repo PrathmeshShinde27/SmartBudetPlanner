@@ -87,12 +87,37 @@ CREATE TABLE IF NOT EXISTS expenses (
   payment_method TEXT NOT NULL,
   description TEXT,
   expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  bill_date DATE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS bill_date DATE;
+UPDATE expenses SET bill_date = expense_date WHERE bill_date IS NULL;
+ALTER TABLE expenses ALTER COLUMN bill_date SET NOT NULL;
+
+CREATE TABLE IF NOT EXISTS payment_types (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  is_protected BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, name)
+);
+
+INSERT INTO payment_types (user_id, name, is_protected)
+SELECT id, 'Cash', TRUE FROM users
+ON CONFLICT (user_id, name) DO UPDATE SET is_protected = TRUE;
+
+INSERT INTO payment_types (user_id, name, is_protected)
+SELECT id, 'UPI', TRUE FROM users
+ON CONFLICT (user_id, name) DO UPDATE SET is_protected = TRUE;
+
 CREATE INDEX IF NOT EXISTS idx_categories_user ON categories(user_id);
 CREATE INDEX IF NOT EXISTS idx_monthly_budgets_user_month ON monthly_budgets(user_id, month);
 CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON expenses(user_id, expense_date);
+CREATE INDEX IF NOT EXISTS idx_expenses_user_bill_date ON expenses(user_id, bill_date);
 CREATE INDEX IF NOT EXISTS idx_expenses_user_category ON expenses(user_id, category_id);
 CREATE INDEX IF NOT EXISTS idx_incomes_user_month ON incomes(user_id, month);
+CREATE INDEX IF NOT EXISTS idx_payment_types_user ON payment_types(user_id);

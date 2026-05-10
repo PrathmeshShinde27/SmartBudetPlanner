@@ -1,14 +1,15 @@
 import { Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Toast from '../components/Toast.jsx';
+import PaymentTypesManager from '../components/PaymentTypesManager.jsx';
 import { api } from '../lib/api.js';
 import { currency } from '../lib/format.js';
 import { useBudget } from '../state/BudgetContext.jsx';
 
-const groups = ['Needs', 'Wants', 'Savings'];
+const buckets = ['Needs', 'Wants', 'Savings'];
 
 export default function Categories() {
-  const { categories, dashboard, month, refresh } = useBudget();
+  const { categories, dashboard, month, paymentTypes, refresh } = useBudget();
   const [form, setForm] = useState({ name: '', groupName: 'Needs', plannedAmount: '' });
   const [income, setIncome] = useState('');
   const [drafts, setDrafts] = useState({});
@@ -73,7 +74,7 @@ export default function Categories() {
 
   async function deleteCategory(category) {
     try {
-      await api.delete(`/category/${category.id}`);
+      await api.delete(`/category/${category.id}`, { params: { month } });
       await refresh();
       showToast(`${category.name} deleted`);
     } catch (error) {
@@ -82,7 +83,7 @@ export default function Categories() {
   }
 
   const incomeNumber = Number(income || dashboard?.totals?.plannedIncome || 0);
-  const incomeTargets = groups.map((group) => {
+  const incomeTargets = buckets.map((group) => {
     const targetPercent = group === 'Needs' ? 0.5 : group === 'Wants' ? 0.3 : 0.2;
     return {
       group,
@@ -146,9 +147,9 @@ export default function Categories() {
           <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </label>
         <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-500">Group</span>
+            <span className="mb-1 block text-xs font-medium text-zinc-500">Bucket</span>
           <select className="input" value={form.groupName} onChange={(e) => setForm({ ...form, groupName: e.target.value })}>
-            {groups.map((group) => <option key={group}>{group}</option>)}
+            {buckets.map((group) => <option key={group}>{group}</option>)}
           </select>
         </label>
         <label>
@@ -171,8 +172,10 @@ export default function Categories() {
         </div>
       </form>
 
+      <PaymentTypesManager paymentTypes={paymentTypes} onChanged={refresh} onToast={showToast} />
+
       <div className="grid gap-4 xl:grid-cols-3">
-        {groups.map((group) => {
+        {buckets.map((group) => {
           const rows = categories.filter((category) => category.groupName === group && !category.isArchived);
           return (
             <section key={group} className="panel p-4">

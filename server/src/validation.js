@@ -89,7 +89,12 @@ export const expenseSchema = z.object({
   amount: z.coerce.number().positive(),
   paymentMethod: z.string().trim().min(1).max(60),
   description: z.string().trim().max(500).optional().nullable(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
 });
 
 export const expenseUpdateSchema = expenseSchema.partial();
+
+export const paymentTypeSchema = z.object({
+  name: z.string().trim().min(1).max(60)
+});

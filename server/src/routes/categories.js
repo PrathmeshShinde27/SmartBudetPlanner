@@ -25,7 +25,8 @@ categoriesRouter.get('/', requireAuth, async (req, res, next) => {
        LEFT JOIN expenses e
          ON e.category_id = c.id AND e.user_id = c.user_id AND to_char(e.expense_date, 'YYYY-MM') = $2
        WHERE c.user_id = $1
-       GROUP BY c.id, mb.planned_amount
+       GROUP BY c.id, mb.id, mb.planned_amount
+       HAVING mb.id IS NOT NULL OR COUNT(e.id) > 0
        ORDER BY c.is_archived ASC,
          CASE c.group_name WHEN 'Needs' THEN 1 WHEN 'Wants' THEN 2 ELSE 3 END,
          c.name`,
@@ -46,13 +47,19 @@ categoriesRouter.post('/', requireAuth, async (req, res, next) => {
   try {
     const input = categorySchema.parse(req.body);
     const category = await withTransaction(async (client) => {
-      const result = await client.query(
+      const existing = await client.query(
+        `SELECT id, name, group_name AS "groupName", default_budget AS "defaultBudget"
+         FROM categories
+         WHERE user_id = $1 AND lower(name) = lower($2)
+         LIMIT 1`,
+        [req.user.id, input.name]
+      );
+      const created = existing.rows[0] || (await client.query(
         `INSERT INTO categories (user_id, name, group_name, default_budget)
          VALUES ($1, $2, $3, $4)
          RETURNING id, name, group_name AS "groupName", default_budget AS "defaultBudget"`,
         [req.user.id, input.name, input.groupName, input.defaultBudget]
-      );
-      const created = result.rows[0];
+      )).rows[0];
       const month = input.month || currentMonth();
       await client.query(
         `INSERT INTO monthly_budgets (user_id, category_id, month, planned_amount)
@@ -95,11 +102,39 @@ categoriesRouter.put('/:id', requireAuth, async (req, res, next) => {
 
 categoriesRouter.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const result = await query('DELETE FROM categories WHERE id = $1 AND user_id = $2 RETURNING id', [
+    const month = assertMonth(req.query.month || currentMonth());
+    const category = await query('SELECT id FROM categories WHERE id = $1 AND user_id = $2', [
       req.params.id,
       req.user.id
     ]);
-    if (!result.rows[0]) return res.status(404).json({ message: 'Category not found' });
+    if (!category.rows[0]) return res.status(404).json({ message: 'Category not found' });
+
+    const expenses = await query(
+      `SELECT COUNT(*)::int AS total
+       FROM expenses
+       WHERE category_id = $1 AND user_id = $2 AND to_char(expense_date, 'YYYY-MM') = $3`,
+      [req.params.id, req.user.id, month]
+    );
+    if (expenses.rows[0].total > 0) {
+      return res.status(400).json({ message: 'Delete expenses in this category before deleting it from this month' });
+    }
+
+    await query('DELETE FROM monthly_budgets WHERE category_id = $1 AND user_id = $2 AND month = $3', [
+      req.params.id,
+      req.user.id,
+      month
+    ]);
+
+    const usage = await query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM monthly_budgets WHERE category_id = $1 AND user_id = $2) AS budgets,
+         (SELECT COUNT(*)::int FROM expenses WHERE category_id = $1 AND user_id = $2) AS expenses`,
+      [req.params.id, req.user.id]
+    );
+    if (usage.rows[0].budgets === 0 && usage.rows[0].expenses === 0) {
+      await query('DELETE FROM categories WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    }
+
     res.status(204).send();
   } catch (error) {
     if (error.code === '23503') {
