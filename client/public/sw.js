@@ -1,5 +1,17 @@
-const CACHE_NAME = 'smart-budget-planner-v1';
+const CACHE_NAME = 'smart-budget-planner-v2';
 const APP_SHELL = ['/', '/favicon.svg', '/manifest.webmanifest'];
+const API_PATHS = [
+  '/auth',
+  '/dashboard',
+  '/expenses',
+  '/expense',
+  '/categories',
+  '/category',
+  '/income',
+  '/payment-types',
+  '/admin',
+  '/export'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -22,7 +34,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET') return;
 
-  if (url.pathname.startsWith('/auth') || url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/expenses') || url.pathname.startsWith('/categories') || url.pathname.startsWith('/category') || url.pathname.startsWith('/income') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/export')) {
+  if (url.origin !== self.location.origin || API_PATHS.some((path) => url.pathname.startsWith(path))) {
     return;
   }
 
